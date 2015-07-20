@@ -3,12 +3,12 @@ Build Simple REST API on Bottle and SqlAlchemy!
 
 ## Dependency:
 
-*Bottle
+* Bottle
 ```
 pip install bottle
 ```
 
-*SqlAlchemy
+* SqlAlchemy
 ```
 pip install sqlalchemy
 ```
@@ -42,31 +42,41 @@ if __name__ == '__main__':
 
 The restapi decorator shown in the above example will add 5 routes to the 
 bottle app:
+
 1. *GET '/api/test/<pkey>'* Get element by primary key.
+
 2. *POST '/api/test'* Create an element, will return the primary key of
    the created element.
+
 3. *PUT'/api/test/<pkey>'* Modify element by primary key
+
 4. *DELETE'/api/test/<pkey>'* Delete element by primary key
+
 5. *GET '/api/test?attr=value1&..'* search by specific attribute.
 
 ## Demo
 1. Run above file:
-``` python rest_main.py 
+
+``` 
+python rest_main.py 
 ```
 
 2. Create a a Test object:
+
 ```
 $ curl localhost:8080/api/test --data '{"key": 1, "value":2 }'
 {"key": 1}
 ```
 
 3. Get that Test object using primary key.
+
 ```
 $ curl localhost:8080/api/test/1
 {"uid": 1, "value": 2}
 ```
 
 4. Modify test object.
+
 ```
  curl localhost:8080/api/test/1 --data '{"value":3 }' -X PUT
 {"modified": 1}
@@ -74,11 +84,13 @@ $ curl localhost:8080/api/test/1
 The api returns the number of object modified.
 
 5. Searching:
+
 ```
 $ curl localhost:8080/api/test?value=3
 {"uid": 1, "value": 3}
 ```
 5. Deleting: Api returns number of items deleted.
+
 ```
 $ curl localhost:8080/api/test/1 -X DELETE
 {"deleted": 1}
