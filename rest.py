@@ -104,7 +104,7 @@ class RestApi(object):
         return {'result': list(content)}
 
 
-class RestDecorator(object):
+class RestApiApp(object):
 
     def __init__(self, bottle_app, connection):
         self.app = bottle_app
@@ -121,8 +121,8 @@ class RestDecorator(object):
             url_with_id = url +'/<pkey>'
             self.app.get(url_with_id)(restapi.get)
             self.app.put(url_with_id)(restapi.put)
+            self.app.delete(url_with_id)(restapi.delete)
             self.app.post(url)(restapi.post)
-            self.app.delete(url)(restapi.delete)
             self.app.get(url)(restapi.search)
             return clazz
         return decorator

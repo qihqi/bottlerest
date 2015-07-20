@@ -1,11 +1,11 @@
 import unittest
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, create_engine
-from rest import DBApi, RestDecorator
+from rest import DBApi, RestApiApp
 import bottle
 app = bottle.Bottle()
 engine = create_engine('sqlite://')
-decor = RestDecorator(app, engine)
+decor = RestApiApp(app, engine)
 
 
 Base = declarative_base()
