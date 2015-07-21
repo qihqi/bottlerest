@@ -1,6 +1,6 @@
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import sessionmaker
-from bottle import request
+import bottle
 import json
 
 
@@ -17,7 +17,8 @@ class DBApi(object):
             setattr(dbobj, key, value)
         session.add(dbobj)
         session.flush()
-        return getattr(dbobj, self.primary_key.name)
+        pkey = getattr(dbobj, self.primary_key.name)
+        return {self.primary_key.name: pkey}
 
     def _get_dbobj(self, session, pkey):
         dbobj = session.query(self.db_class).filter(
@@ -50,11 +51,11 @@ class DBApi(object):
         query = session.query(self.db_class)
         for key, value in kwargs.items():
             mode = None
-            if '$' in key:
-                key, mode = key.split('$')
+            if '-' in key:
+                key, mode = key.split('-')
             f = self.columns[key] == value
             if mode == 'prefix':
-                f = self.columns[key].startwith(value)
+                f = self.columns[key].startswith(value)
             query = query.filter(f)
         return map(self.obj_to_dict, query)
 
@@ -81,14 +82,14 @@ class RestApi(object):
         return self.wrapped_call(self.dbapi.get, pkey=pkey)
 
     def put(self, pkey):
-        content_dict = json.loads(request.body.read())
+        content_dict = json.loads(bottle.request.body.read())
         count = self.wrapped_call(
             self.dbapi.update,
             pkey=pkey, content_dict=content_dict)
         return {'modified': count}
 
     def post(self):
-        content_dict = json.loads(request.body.read())
+        content_dict = json.loads(bottle.request.body.read())
         pkey = self.wrapped_call(
             self.dbapi.create,
             content_dict=content_dict)
@@ -99,31 +100,38 @@ class RestApi(object):
         return {'deleted': count}
 
     def search(self):
-        args = request.query
+        args = bottle.request.query
         content = self.wrapped_call(self.dbapi.search, **args)
         return {'result': list(content)}
 
 
 class RestApiApp(object):
 
-    def __init__(self, bottle_app, connection):
+    def __init__(self, connection, bottle_app=None):
+        if bottle_app is None:
+            bottle_app = bottle.default_app()
         self.app = bottle_app
+        if isinstance(connection, str):
+            from sqlalchemy import create_engine
+            connection = create_engine(connection)
         self.connection = connection
         self.sessionmaker = sessionmaker(bind=connection)
         self.apis = {}
 
+    def bind_api(self, url, clazz):
+        dbapi = DBApi(clazz)
+        self.apis[clazz] = dbapi
+        restapi = RestApi(dbapi, self.sessionmaker)
+        url_with_id = url +'/<pkey>'
+        self.app.get(url_with_id)(restapi.get)
+        self.app.put(url_with_id)(restapi.put)
+        self.app.delete(url_with_id)(restapi.delete)
+        self.app.post(url)(restapi.post)
+        self.app.get(url)(restapi.search)
 
-    def __call__(self, url):
+    def rest(self, url):
         def decorator(clazz):
-            dbapi = DBApi(clazz)
-            self.apis[clazz] = dbapi
-            restapi = RestApi(dbapi, self.sessionmaker)
-            url_with_id = url +'/<pkey>'
-            self.app.get(url_with_id)(restapi.get)
-            self.app.put(url_with_id)(restapi.put)
-            self.app.delete(url_with_id)(restapi.delete)
-            self.app.post(url)(restapi.post)
-            self.app.get(url)(restapi.search)
+            self.bind_api(url, clazz)
             return clazz
         return decorator
 

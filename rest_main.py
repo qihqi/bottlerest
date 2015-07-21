@@ -1,20 +1,20 @@
-import unittest
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, create_engine
-from rest import DBApi, RestApiApp
 import bottle
-app = bottle.Bottle()
-engine = create_engine('sqlite://')
-decor = RestApiApp(app, engine)
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String
+from bottlerest import RestApiApp
 
-
+api = RestApiApp('sqlite://')
 Base = declarative_base()
 
-@decor('/api/test')
+
+@api.rest('/api/test')
 class NTest(Base):
     __tablename__ = 'test'
-    uid = Column(Integer, primary_key=True)
+    key = Column(Integer, primary_key=True)
     value = Column(Integer)
+    string_attr = Column(String(20))
 
-Base.metadata.create_all(engine)
-bottle.run(app, host='0.0.0.0', port=8080)
+
+if __name__ == '__main__':
+    Base.metadata.create_all(api.connection)
+    bottle.run(host='0.0.0.0', port=8080)
